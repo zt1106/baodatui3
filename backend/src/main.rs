@@ -1,63 +1,57 @@
-use futures_util::FutureExt;
-use rust_socketio::{
-    asynchronous::{Client, ClientBuilder},
-    Payload,
-};
-use serde_json::json;
-use std::time::Duration;
+pub mod db;
+use rsocket_rust::prelude::*;
+use rsocket_rust::utils::EchoRSocket;
+use rsocket_rust::Result;
+use rsocket_rust_transport_websocket::WebsocketServerTransport;
+
+pub mod model {
+    include!(concat!(env!("OUT_DIR"), "/model.rs"));
+}
+
+const ADDR: &str = "127.0.0.1:8080";
 
 #[tokio::main]
-async fn main() {
-    // define a callback which is called when a payload is received
-    // this callback gets the payload as well as an instance of the
-    // socket to communicate with the server
-    let callback = |payload: Payload, socket: Client| {
-        async move {
-            match payload {
-                Payload::String(str) => println!("Received: {}", str),
-                Payload::Binary(bin_data) => println!("Received bytes: {:#?}", bin_data),
-            }
-            socket
-                .emit("test", json!({"got ack": true}))
-                .await
-                .expect("Server unreachable");
-        }
-        .boxed()
-    };
-
-    // get a socket that is connected to the admin namespace
-    let socket = ClientBuilder::new("http://localhost:4200/")
-        .namespace("/admin")
-        .on("test", callback)
-        .on("error", |err, _| {
-            async move { eprintln!("Error: {:#?}", err) }.boxed()
-        })
-        .connect()
+async fn main() -> Result<()> {
+    // let _user_storage = db::InMemoryStorage::<model::User>::default();
+    RSocketFactory::receive()
+        .acceptor(Box::new(|setup, _socket| {
+            println!("accept setup: {:?}", setup);
+            Ok(Box::new(EchoRSocket))
+        }))
+        .transport(WebsocketServerTransport::from(ADDR))
+        .serve()
         .await
-        .expect("Connection failed");
+}
 
-    // emit to the "foo" event
-    let json_payload = json!({"token": 123});
-    socket
-        .emit("foo", json_payload)
-        .await
-        .expect("Server unreachable");
+#[cfg(test)]
+mod tests {
+    use rsocket_rust_transport_websocket::WebsocketClientTransport;
 
-    // define a callback, that's executed when the ack got acked
-    let ack_callback = |message: Payload, _: Client| {
-        async move {
-            println!("Yehaa! My ack got acked?");
-            println!("Ack data: {:#?}", message);
-        }
-        .boxed()
-    };
+    use super::*;
 
-    let json_payload = json!({"myAckData": 123});
-    // emit with an ack
-    socket
-        .emit_with_ack("test", json_payload, Duration::from_secs(2), ack_callback)
-        .await
-        .expect("Server unreachable");
+    #[test]
+    fn test() {
+        let mut shirt = model::Shirt::default();
+        shirt.color = "color".to_string();
+        shirt.set_size(model::shirt::Size::Large);
+    }
 
-    socket.disconnect().await.expect("Disconnect failed");
+    #[tokio::test]
+    async fn test_connect() -> Result<()> {
+        let client = RSocketFactory::connect()
+            .transport(WebsocketClientTransport::from("127.0.0.1:8080"))
+            .setup(Payload::from("READY!"))
+            .mime_type("text/plain", "text/plain")
+            .start()
+            .await?;
+
+        let request_payload = Payload::builder()
+            .set_data_utf8("Hello World!")
+            .set_metadata_utf8("Rust")
+            .build();
+
+        let res = client.request_response(request_payload).await?;
+        println!("got response: {:?}", res);
+        Ok(())
+    }
 }
