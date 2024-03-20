@@ -5,3 +5,4 @@
 - more extensible, like items
 - better frontend framework
 - not just baodatui! can be versertile! poker game factory!
+- sad
