@@ -6,28 +6,25 @@ use crate::container::user_manager::user_manager;
 use super::Handler;
 
 #[derive(Serialize, Deserialize)]
-pub struct ChangeUserNameRequest {
+pub struct ChangeUserNameRequestBody {
     pub new_name: String,
 }
-#[derive(Serialize, Deserialize)]
-pub struct ChangeUserNameResponse;
-
 pub struct ChangeUserNameHandler;
 
 #[async_trait]
-impl Handler<ChangeUserNameRequest, ChangeUserNameResponse> for ChangeUserNameHandler {
+impl Handler<ChangeUserNameRequestBody, ()> for ChangeUserNameHandler {
     async fn handle(
         &self,
-        request: ChangeUserNameRequest,
+        request_body: ChangeUserNameRequestBody,
         uid: u32,
-    ) -> super::Response<ChangeUserNameResponse> {
+    ) -> super::Response<()> {
         return if let Some(user) = user_manager().get(uid) {
             let mut user = user.lock().await;
-            user.nick_name = request.new_name;
-            super::Response::Data(ChangeUserNameResponse)
+            user.nick_name = request_body.new_name;
+            super::Response::Data(())
             // TODO should also trigger room refresh event
         } else {
             super::Response::Error("user not found".to_string())
-        }
+        };
     }
 }
