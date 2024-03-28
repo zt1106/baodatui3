@@ -1,6 +1,7 @@
 # baodatui3
 
 > It's just for fun!
+> It's not a toy anymore, it's a real game.
 
 System Design
 - better testing (more coverage, playwrite, seed)
