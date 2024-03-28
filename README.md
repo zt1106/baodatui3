@@ -1,7 +1,10 @@
 # baodatui3
 
 > It's just for fun!
+
 > It's not a toy anymore, it's a real game.
+
+> Should decide what can't be changed, what is customizable!!!
 
 System Design
 - better testing (more coverage, playwrite, seed)
