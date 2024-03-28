@@ -25,3 +25,10 @@ Game Feature
 - easy to play, should remove some odd rules, should have tutorial
 - also good for old players
 - AI !!!!!
+- removed
+    - non-prime
+    - challenge?
+- Fixed
+    - cards must be either prime or sub
+- Customizable
+    - what numbers are always prime
