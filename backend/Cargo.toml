@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.78"
 anyhow = "1.0.81"
 baodatui-macro = { path = "../macro" }
 tokio = { version = "1", features = ["full"] }
@@ -20,6 +19,7 @@ rand = "0.8.5"
 time = "0.3.34"
 serde = { version = "1.0.197", features = ["derive"] }
 rusqlite = { version = "0.31.0", features = ["bundled"] }
+parking_lot = "0.12.3"
 [dependencies.uuid]
 version = "1.7.0"
 features = [

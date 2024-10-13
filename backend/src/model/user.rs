@@ -1,12 +1,26 @@
 use baodatui_macro::ID;
 use rand::Rng;
+use uuid::Uuid;
 
-#[derive(Default, Clone, ID, Debug)]
+#[derive(Clone, ID, Debug)]
 pub struct User {
     pub id: u32,
     pub nick_name: String,
     pub uuid: String,
     pub login_timestamp: u64,
+}
+
+impl Default for User {
+    fn default() -> Self {
+        let nick_name = create_random_chinese_name();
+        let uuid = Uuid::new_v4().to_string();
+        Self {
+            id: 0,
+            nick_name,
+            uuid,
+            login_timestamp: 0,
+        }
+    }
 }
 
 #[test]

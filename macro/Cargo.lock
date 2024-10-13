@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "baodatui-macros"
+name = "baodatui-macro"
 version = "0.1.0"
 dependencies = [
  "quote",

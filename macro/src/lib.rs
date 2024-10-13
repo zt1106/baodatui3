@@ -15,7 +15,7 @@ pub fn my_macro_here_derive(input: TokenStream) -> TokenStream {
     let name = input.ident;
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
-        impl crate::container::arcmap::WithId for #name {
+        impl crate::data_structure::shared_map::WithId for #name {
             fn set_id(&mut self, id: u32) {
                 self.id = id;
             }
