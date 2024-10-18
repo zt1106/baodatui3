@@ -20,6 +20,7 @@ time = "0.3.34"
 serde = { version = "1.0.197", features = ["derive"] }
 rusqlite = { version = "0.31.0", features = ["bundled"] }
 parking_lot = "0.12.3"
+futures-channel = "0.3.31"
 [dependencies.uuid]
 version = "1.7.0"
 features = [

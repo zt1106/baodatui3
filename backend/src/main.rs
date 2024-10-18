@@ -2,11 +2,11 @@ pub mod ext;
 pub mod model;
 pub mod rsocket;
 pub mod utils;
-mod global;
-mod data_structure;
-mod transport;
-mod event;
-mod engine;
+pub mod global;
+pub mod data_structure;
+pub mod transport;
+pub mod event;
+pub mod engine;
 
 use global::user_manager::user_manager;
 use crate::model::user::User;
