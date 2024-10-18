@@ -1,12 +1,12 @@
 use crate::transport::request::{RawRequestHandler, RequestHandler, RequestHandlerWrapper};
-use crate::transport::stream::{RawStreamHandler, StreamHandler, StreamHandlerWrapper, StreamRecvWrapper};
+use crate::transport::stream::{RawStreamHandler, StreamHandler, StreamHandlerWrapper};
 use parking_lot::RwLock;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 
-pub fn request_handler_manager() -> &'static RSocketManager {
+pub fn rsocket_manager() -> &'static RSocketManager {
     static USER_MANAGER: OnceLock<RSocketManager> = OnceLock::new();
     USER_MANAGER.get_or_init(RSocketManager::default)
 }
@@ -21,7 +21,7 @@ pub struct RSocketManager {
 impl RSocketManager {
     pub fn add_request_handler<Req, Res>(&self, command: impl Into<String>, handler: impl RequestHandler<Req, Res> + 'static)
     where
-        Req: Serialize + DeserializeOwned + 'static + Send + Sync,
+        Req: Serialize + DeserializeOwned + 'static,
         Res: Serialize + DeserializeOwned + 'static,
     {
         let command = command.into();

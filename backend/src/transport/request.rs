@@ -25,9 +25,11 @@ where
     inner: Box<dyn RequestHandler<Req, Res>>,
 }
 
-impl<Req, Res> RequestHandlerWrapper<Req, Res>where
+impl<Req, Res> RequestHandlerWrapper<Req, Res>
+where
     Req: Serialize + DeserializeOwned,
-    Res: Serialize + DeserializeOwned, {
+    Res: Serialize + DeserializeOwned,
+{
     pub fn new(handler: impl RequestHandler<Req, Res> + Send + Sync + 'static) -> Self {
         Self {
             inner: Box::new(handler),
