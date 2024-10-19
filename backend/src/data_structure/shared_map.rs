@@ -70,7 +70,7 @@ impl<T: WithId> GlobalMap<T> {
         self.inner_map.read().contains_key(&id)
     }
 
-    pub fn find(&self, f: impl Fn(&T) -> bool) -> Option<Arc<RwLock<T>>> {
+    pub fn find_first(&self, f: impl Fn(&T) -> bool) -> Option<Arc<RwLock<T>>> {
         let map = self.inner_map.read();
         for (_, v) in map.iter() {
             let t = v.read();
@@ -79,5 +79,9 @@ impl<T: WithId> GlobalMap<T> {
             }
         }
         None
+    }
+
+    pub fn all(&self) -> Vec<Arc<RwLock<T>>> {
+        self.inner_map.read().values().cloned().collect()
     }
 }

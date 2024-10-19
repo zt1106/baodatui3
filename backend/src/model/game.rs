@@ -1,11 +1,11 @@
+use crate::model::configurable_rules::GameConfigurations;
+use crate::model::user::User;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::model::configurable_rules::ConfigurableRules;
-use crate::model::user::User;
 
 pub struct Game {
     players: Vec<Player>,
-    configurable_rules: ConfigurableRules,
+    configurable_rules: GameConfigurations,
 }
 
 pub struct Player {

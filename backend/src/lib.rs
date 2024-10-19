@@ -39,7 +39,9 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
                     if let Ok(setup) = setup_r {
                         if let Some(uuid) = setup.get("uuid") {
                             if let Some(uuid) = uuid.as_str() {
-                                if let Some(user) = user_manager().find_user_by_uuid(uuid) {
+                                if let Some(user) =
+                                    user_manager().find_user_by_uuid(&uuid.to_string())
+                                {
                                     return user.read().id;
                                 }
                             }

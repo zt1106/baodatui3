@@ -1,25 +1,25 @@
 use serde::{Deserialize, Serialize};
 
 /// all configurable rules of how the game is played
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ConfigurableRules {
-    basic_rules: BasicRules,
-    play_rules: PlayRules,
-    time_rules: TimeRules,
-    score_rules: ScoreRules,
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct GameConfigurations {
+    pub basic_configs: BasicConfigurations,
+    pub play_configs: PlayConfigurations,
+    pub time_configs: TimeConfigurations,
+    pub score_configs: ScoreConfigurations,
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 
-pub struct BasicRules {
-    player_count: u8,
-    deck_size: u8,
+pub struct BasicConfigurations {
+    pub max_player_count: u8,
+    pub deck_size: u8,
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 
-pub struct PlayRules {}
-#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PlayConfigurations {}
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 
-pub struct TimeRules {}
-#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TimeConfigurations {}
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 
-pub struct ScoreRules {}
+pub struct ScoreConfigurations {}
