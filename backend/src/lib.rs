@@ -15,13 +15,14 @@ use crate::model::user::User;
 use crate::rsocket::ServerRSocket;
 use futures::executor;
 use global::user_manager::user_manager;
+use parking_lot::RwLock;
 use rsocket_rust::prelude::*;
 use rsocket_rust::Result;
 use rsocket_rust_transport_websocket::WebsocketServerTransport;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::select;
-use tokio::sync::{oneshot, RwLock};
+use tokio::sync::oneshot;
 use utils::cur_timestamp;
 
 const SERVER_LOCAL_PORT: u16 = 8080;
@@ -38,8 +39,8 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
                     if let Ok(setup) = setup_r {
                         if let Some(uuid) = setup.get("uuid") {
                             if let Some(uuid) = uuid.as_str() {
-                                if let Some(user) = user_manager().find_user_by_uuid(uuid).await {
-                                    return user.read().await.id;
+                                if let Some(user) = user_manager().find_user_by_uuid(uuid) {
+                                    return user.read().id;
                                 }
                             }
                         }
@@ -49,10 +50,10 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
                     inner = Some(user_manager().add_default());
                 }
                 let inner: Arc<RwLock<User>> = inner.unwrap();
-                let mut u = inner.write().await;
+                let mut u = inner.write();
                 u.login_timestamp = cur_timestamp();
                 drop(u);
-                let id = inner.read().await.id;
+                let id = inner.read().id;
                 id
             });
             Ok(Box::new(ServerRSocket {

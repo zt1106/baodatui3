@@ -1,4 +1,3 @@
-use crate::ext::AsyncMap;
 use crate::global::user_manager::user_manager;
 use crate::model::user::User;
 use crate::transport::request::RequestHandler;
@@ -13,8 +12,7 @@ impl RequestHandler<(), User> for GetCurUserHandler {
         async move {
             user_manager()
                 .get(uid)
-                .async_map(|u| async move { u.read().await.clone() }.boxed())
-                .await
+                .map(|u| u.read().clone())
                 .ok_or(Error::msg("User not found"))
         }
         .boxed()
@@ -35,7 +33,7 @@ impl RequestHandler<String, ()> for ChangeCurUserNameHandler {
             let user = user_manager()
                 .get(uid)
                 .ok_or(Error::msg("User not found"))?;
-            let mut user_lock = user.write().await;
+            let mut user_lock = user.write();
             user_lock.nick_name = req;
             Ok(())
         }

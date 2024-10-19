@@ -1,7 +1,6 @@
-use std::sync::{Arc, OnceLock};
-use tokio::sync::RwLock;
-
 use crate::model::user::User;
+use parking_lot::RwLock;
+use std::sync::{Arc, OnceLock};
 
 use crate::data_structure::shared_map::GlobalMap;
 
@@ -11,7 +10,7 @@ pub fn user_manager() -> &'static GlobalMap<User> {
 }
 
 impl GlobalMap<User> {
-    pub async fn find_user_by_uuid(&self, uuid: &str) -> Option<Arc<RwLock<User>>> {
-        self.find(|user| user.uuid == uuid).await
+    pub fn find_user_by_uuid(&self, uuid: &str) -> Option<Arc<RwLock<User>>> {
+        self.find(|user| user.uuid == uuid)
     }
 }
