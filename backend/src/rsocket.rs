@@ -1,11 +1,11 @@
 use crate::ext::IntoResult;
 use crate::global::rsocket_manager::rsocket_manager;
 use futures_util::StreamExt;
-use rsocket_rust::async_trait;
 use rsocket_rust::prelude::{Flux, Payload, RSocket};
 use rsocket_rust::stream;
 use serde_json::Value;
 use std::sync::Arc;
+use async_trait::async_trait;
 
 // per user connection
 #[derive(Clone)]
@@ -32,7 +32,7 @@ impl RSocket for ServerRSocket {
             }
         }?;
         let command = req.metadata_utf8().into_result()?;
-        let resp_v = rsocket_manager().raw_handler(command).handle_raw(req_v).await?;
+        let resp_v = rsocket_manager().raw_handler(command).handle_raw(self.user_id, req_v).await?;
         let resp_s = serde_json::to_string(&resp_v)?;
         let payload = Payload::builder().set_data_utf8(resp_s.as_str()).build();
         Ok(Some(payload))

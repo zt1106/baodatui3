@@ -1,8 +1,9 @@
 use baodatui_macro::ID;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone, ID, Debug)]
+#[derive(Clone, ID, Debug, Serialize, Deserialize)]
 pub struct User {
     pub id: u32,
     pub nick_name: String,

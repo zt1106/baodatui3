@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.81"
+async-trait = "0.1.83"
 baodatui-macro = { path = "../macro" }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3.30"

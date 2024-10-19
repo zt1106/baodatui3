@@ -7,6 +7,7 @@ pub mod data_structure;
 pub mod transport;
 pub mod event;
 pub mod engine;
+pub mod test_client;
 
 use global::user_manager::user_manager;
 use crate::model::user::User;
@@ -20,10 +21,13 @@ use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use utils::cur_timestamp;
+use crate::global::handlers::user_handlers::GetCurUserHandler;
+use crate::global::rsocket_manager::rsocket_manager;
 
-const ADDR: &str = "127.0.0.1:8080";
+const SERVER_LOCAL_PORT: u16 = 8080;
 
 pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Result<()> {
+    init_global_handlers();
     let server_future = RSocketFactory::receive()
         .acceptor(Box::new(|setup, client_rsocket| {
             let user_id: u32 = executor::block_on(async {
@@ -56,7 +60,7 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
                 user_id,
             }))
         }))
-        .transport(WebsocketServerTransport::from(ADDR))
+        .transport(WebsocketServerTransport::from(format!("127.0.0.1:{}", SERVER_LOCAL_PORT)))
         .serve();
     if stop_signal_recv.is_none() {
         return server_future.await;
@@ -72,23 +76,6 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
     }
 }
 
-#[tokio::test]
-async fn test_connect() -> Result<()> {
-    let client = RSocketFactory::connect()
-        .transport(
-            rsocket_rust_transport_websocket::WebsocketClientTransport::from("127.0.0.1:8080"),
-        )
-        .setup(Payload::from("READY!"))
-        .mime_type("text/plain", "text/plain")
-        .start()
-        .await?;
-
-    let request_payload = Payload::builder()
-        .set_data_utf8("Hello World!")
-        .set_metadata_utf8("Rust")
-        .build();
-
-    let res = client.request_response(request_payload).await?;
-    println!("got response: {:?}", res);
-    Ok(())
+fn init_global_handlers() {
+    rsocket_manager().add_request_handler("GetCurUser", GetCurUserHandler);
 }
