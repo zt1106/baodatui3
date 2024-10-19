@@ -1,7 +1,7 @@
+use backend::test_client::{Client, Server};
 use std::time::Duration;
 use tokio::spawn;
 use tokio::time::sleep;
-use backend::test_client::{Client, Server};
 
 #[tokio::test]
 async fn server_shutdown_smoke() {
@@ -56,4 +56,13 @@ async fn multiple_user_smoke() {
         let user2 = client2.cur_user().await;
         println!("user: {:?}", user2);
     }
+}
+
+#[tokio::test]
+async fn change_user_name_smoke() {
+    let mut client = Client::new();
+    client.connect().await;
+    client.change_cur_user_name("test").await.unwrap();
+    let user = client.cur_user().await;
+    assert_eq!(user.nick_name, "test");
 }

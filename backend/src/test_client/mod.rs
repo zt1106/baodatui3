@@ -1,18 +1,18 @@
-use std::sync::Arc;
-use std::time::Duration;
+use crate::model::user::User;
+use crate::{main_inner, SERVER_LOCAL_PORT};
 use anyhow::Error;
 use parking_lot::Mutex;
 use rsocket_rust::prelude::{Payload, RSocket, RSocketFactory};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
-use crate::{main_inner, SERVER_LOCAL_PORT};
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::oneshot::Sender;
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use uuid::Uuid;
-use crate::model::user::User;
 
 pub struct Server {
     shutdown_main_send: Option<Sender<()>>,
@@ -30,7 +30,6 @@ impl Server {
             main_join_handle: Some(main_join_handle),
         }
     }
-
 
     /// can only call once
     pub fn shutdown_send(&mut self) -> Sender<()> {
@@ -57,7 +56,10 @@ impl Client {
     }
 
     pub fn new_with_server(server: Arc<Mutex<Server>>) -> Self {
-        Self { server, r_client: None }
+        Self {
+            server,
+            r_client: None,
+        }
     }
 
     pub fn shutdown_server(&self) {
@@ -85,12 +87,19 @@ impl Client {
         });
         let r_client = RSocketFactory::connect()
             .transport(
-                rsocket_rust_transport_websocket::WebsocketClientTransport::from(format!("127.0.0.1:{}", SERVER_LOCAL_PORT).as_str()),
+                rsocket_rust_transport_websocket::WebsocketClientTransport::from(
+                    format!("127.0.0.1:{}", SERVER_LOCAL_PORT).as_str(),
+                ),
             )
-            .setup(Payload::builder().set_data_utf8(serde_json::to_string(&setup_json).unwrap().as_str()).build())
+            .setup(
+                Payload::builder()
+                    .set_data_utf8(serde_json::to_string(&setup_json).unwrap().as_str())
+                    .build(),
+            )
             .mime_type("text/plain", "text/plain")
             .start()
-            .await.unwrap();
+            .await
+            .unwrap();
         self.r_client = Some(r_client);
     }
 
@@ -110,25 +119,31 @@ impl Client {
         Res: Serialize + DeserializeOwned,
     {
         let req_v = serde_json::to_value(req)?;
-        let mut req_builder = Payload::builder()
-            .set_metadata_utf8(command);
+        let mut req_builder = Payload::builder().set_metadata_utf8(command);
         match req_v {
             Value::Null => {}
             _ => {
                 req_builder = req_builder.set_data_utf8(serde_json::to_string(&req_v)?.as_str());
             }
         }
-        let res_p = self.r_client().request_response(req_builder.build()).await?.ok_or(Error::msg("res is none"))?;
+        let res_p = self
+            .r_client()
+            .request_response(req_builder.build())
+            .await?
+            .ok_or(Error::msg("res is none"))?;
         let res_v = match res_p.data_utf8() {
             None => Ok(Value::Null),
-            Some(s) => {
-                serde_json::from_str(s)
-            }
+            Some(s) => serde_json::from_str(s),
         }?;
         Ok(serde_json::from_value(res_v)?)
     }
 
     pub async fn cur_user(&self) -> User {
         self.generic_request("GetCurUser", &()).await.unwrap()
+    }
+
+    pub async fn change_cur_user_name(&self, new_name: &str) -> Result<(), Error> {
+        self.generic_request("ChangeCurUserName", &new_name.to_string())
+            .await
     }
 }

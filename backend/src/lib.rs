@@ -1,28 +1,28 @@
+pub mod data_structure;
+pub mod engine;
+pub mod event;
 pub mod ext;
+pub mod global;
 pub mod model;
 pub mod rsocket;
-pub mod utils;
-pub mod global;
-pub mod data_structure;
-pub mod transport;
-pub mod event;
-pub mod engine;
 pub mod test_client;
+pub mod transport;
+pub mod utils;
 
-use global::user_manager::user_manager;
+use crate::global::handlers::user_handlers::{ChangeCurUserNameHandler, GetCurUserHandler};
+use crate::global::rsocket_manager::rsocket_manager;
 use crate::model::user::User;
 use crate::rsocket::ServerRSocket;
 use futures::executor;
+use global::user_manager::user_manager;
 use rsocket_rust::prelude::*;
 use rsocket_rust::Result;
 use rsocket_rust_transport_websocket::WebsocketServerTransport;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::select;
-use tokio::sync::{oneshot, Mutex, RwLock};
+use tokio::sync::{oneshot, RwLock};
 use utils::cur_timestamp;
-use crate::global::handlers::user_handlers::GetCurUserHandler;
-use crate::global::rsocket_manager::rsocket_manager;
 
 const SERVER_LOCAL_PORT: u16 = 8080;
 
@@ -60,7 +60,10 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
                 user_id,
             }))
         }))
-        .transport(WebsocketServerTransport::from(format!("127.0.0.1:{}", SERVER_LOCAL_PORT)))
+        .transport(WebsocketServerTransport::from(format!(
+            "127.0.0.1:{}",
+            SERVER_LOCAL_PORT
+        )))
         .serve();
     if stop_signal_recv.is_none() {
         return server_future.await;
@@ -78,4 +81,5 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
 
 fn init_global_handlers() {
     rsocket_manager().add_request_handler("GetCurUser", GetCurUserHandler);
+    rsocket_manager().add_request_handler("ChangeCurUserName", ChangeCurUserNameHandler);
 }

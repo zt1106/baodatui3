@@ -1,11 +1,11 @@
 use crate::ext::IntoResult;
 use crate::global::rsocket_manager::rsocket_manager;
+use async_trait::async_trait;
 use futures_util::StreamExt;
 use rsocket_rust::prelude::{Flux, Payload, RSocket};
 use rsocket_rust::stream;
 use serde_json::Value;
 use std::sync::Arc;
-use async_trait::async_trait;
 
 // per user connection
 #[derive(Clone)]
@@ -27,12 +27,13 @@ impl RSocket for ServerRSocket {
     async fn request_response(&self, req: Payload) -> anyhow::Result<Option<Payload>> {
         let req_v = match req.data_utf8() {
             None => Ok(Value::Null),
-            Some(s) => {
-                serde_json::to_value(s)
-            }
+            Some(s) => serde_json::from_str(s),
         }?;
         let command = req.metadata_utf8().into_result()?;
-        let resp_v = rsocket_manager().raw_handler(command).handle_raw(self.user_id, req_v).await?;
+        let resp_v = rsocket_manager()
+            .raw_handler(command)
+            .handle_raw(self.user_id, req_v)
+            .await?;
         let resp_s = serde_json::to_string(&resp_v)?;
         let payload = Payload::builder().set_data_utf8(resp_s.as_str()).build();
         Ok(Some(payload))
@@ -41,27 +42,27 @@ impl RSocket for ServerRSocket {
     fn request_stream(&self, req: Payload) -> Flux<anyhow::Result<Payload>> {
         let req_v = match req.data_utf8() {
             None => Ok(Value::Null),
-            Some(s) => {
-                serde_json::to_value(s)
-            }
+            Some(s) => serde_json::to_value(s),
         };
         if let Err(err) = req_v {
             return Box::pin(stream! {
-                yield Err(err.into());
-             });
+               yield Err(err.into());
+            });
         }
         let command = req.metadata_utf8().into_result();
         if let Err(err) = command {
             return Box::pin(stream! {
-                yield Err(err.into());
-             });
+               yield Err(err.into());
+            });
         }
         let command = command.unwrap();
-        let recv_result = rsocket_manager().raw_stream_handler(command).handle(req_v.unwrap());
+        let recv_result = rsocket_manager()
+            .raw_stream_handler(command)
+            .handle(req_v.unwrap());
         if let Err(err) = recv_result {
             return Box::pin(stream! {
-                yield Err(err.into());
-             });
+               yield Err(err.into());
+            });
         }
         let recv = recv_result.unwrap();
         Box::pin(recv.map(|v| {

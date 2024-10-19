@@ -20,6 +20,8 @@ Game Feature
 - 缝合怪！把其他 genre 最好的玩法缝进来
     - rogue-like stuff
     - items/tools
+      - change game direction
+      - change player location
     - score/lead board
     - features can be turned on/off
 - easy to play, should remove some odd rules, should have tutorial
