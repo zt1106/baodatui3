@@ -91,7 +91,23 @@ async fn non_owner_change_config_test() {
 }
 
 #[tokio::test]
-async fn enter_room_over_capacity_test() {}
+#[should_panic]
+async fn enter_room_over_capacity_test() {
+    let client = Client::new_and_connect().await;
+    client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
+    let list = client
+        .request_no_args(LIST_ROOM_SIMPLE_INFO_REQ_TYPE)
+        .await
+        .unwrap();
+    let room_id = list.get(0).unwrap().id;
+    for i in 0..10 {
+        let client2 = Client::new_and_connect_with_server(client.server()).await;
+        client2
+            .request(ENTER_ROOM_REQ_TYPE, &room_id)
+            .await
+            .unwrap();
+    }
+}
 
 #[tokio::test]
 async fn non_active_room_test() {}

@@ -45,6 +45,11 @@ impl RoomManager {
         let room = Self::id_map()
             .get(room_id)
             .ok_or(anyhow!("Room not found {}", room_id))?;
+        if room.read().users.len()
+            == room.read().game_configs.basic_configs.max_player_count as usize
+        {
+            return Err(anyhow!("Room is full"));
+        }
         room.write().users.push(
             user_manager()
                 .get(user_id)
