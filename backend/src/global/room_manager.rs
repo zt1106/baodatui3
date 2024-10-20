@@ -6,6 +6,12 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 
+pub fn room_manager() -> &'static RoomManager {
+    static ROOM_MANAGER: OnceLock<RoomManager> = OnceLock::new();
+    ROOM_MANAGER.get_or_init(|| RoomManager::default())
+}
+
+#[derive(Default)]
 pub struct RoomManager {
     user_id_map: Arc<RwLock<HashMap<u32, Arc<RwLock<Room>>>>>,
 }
@@ -34,13 +40,14 @@ impl RoomManager {
         if self.user_id_map.read().contains_key(&user_id) {
             return Err(anyhow!("User already in a room"));
         }
+        // TODO some state of user should be reset when enter a new room
         let room = Self::id_map()
             .get(room_id)
-            .ok_or(anyhow!("Room not found"))?;
+            .ok_or(anyhow!("Room not found {}", room_id))?;
         room.write().users.push(
             user_manager()
                 .get(user_id)
-                .ok_or(anyhow!("User not found"))?,
+                .ok_or(anyhow!("User not found {}", user_id))?,
         );
         self.user_id_map.write().insert(user_id, room.clone());
         Ok(())
@@ -56,6 +63,10 @@ impl RoomManager {
         // TODO cannot remove when prepared, and in game
         room.write().users.retain(|u| u.read().id != user_id);
         self.user_id_map.write().remove(&user_id);
+        if room.read().users.is_empty() {
+            // when last person leave, remove room (room must have at least one user)
+            self.remove_room(room.read().id);
+        }
         Ok(())
     }
 
@@ -68,5 +79,9 @@ impl RoomManager {
         self.user_id_map
             .write()
             .retain(|_, v| v.read().id != room_id);
+    }
+
+    pub fn all(&self) -> Vec<Arc<RwLock<Room>>> {
+        Self::id_map().all()
     }
 }

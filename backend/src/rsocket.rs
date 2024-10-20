@@ -30,10 +30,10 @@ impl RSocket for ServerRSocket {
             Some(s) => serde_json::from_str(s),
         }?;
         let command = req.metadata_utf8().into_result()?;
-        let resp_v = rsocket_manager()
+        let handler = rsocket_manager()
             .raw_handler(command)
-            .handle_raw(self.user_id, req_v)
-            .await?;
+            .ok_or(anyhow::anyhow!("no handler registerd for {}", command))?;
+        let resp_v = handler.handle_raw(self.user_id, req_v).await?;
         let resp_s = serde_json::to_string(&resp_v)?;
         let payload = Payload::builder().set_data_utf8(resp_s.as_str()).build();
         Ok(Some(payload))

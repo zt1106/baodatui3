@@ -1,11 +1,13 @@
 use crate::global::user_manager::user_manager;
 use crate::model::user::User;
-use crate::transport::request::RequestHandler;
+use crate::transport::request::{RequestHandler, RequestType};
 use anyhow::Error;
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 
 pub struct GetCurUserHandler;
+
+pub const GET_CUR_USER_REQ_TYPE: RequestType<(), User> = RequestType::new("GetCurUser");
 
 impl RequestHandler<(), User> for GetCurUserHandler {
     fn handle(&self, uid: u32, _req: ()) -> BoxFuture<Result<User, Error>> {
@@ -20,6 +22,9 @@ impl RequestHandler<(), User> for GetCurUserHandler {
 }
 
 pub struct ChangeCurUserNameHandler;
+
+pub const CHANGE_CUR_USER_NAME_REQ_TYPE: RequestType<String, ()> =
+    RequestType::new("ChangeCurUserName");
 
 impl RequestHandler<String, ()> for ChangeCurUserNameHandler {
     fn handle(&self, uid: u32, req: String) -> BoxFuture<Result<(), Error>> {

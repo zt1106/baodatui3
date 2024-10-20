@@ -1,3 +1,4 @@
+mod SystemSettings;
 pub mod handlers;
 mod room_manager;
 pub mod rsocket_manager;

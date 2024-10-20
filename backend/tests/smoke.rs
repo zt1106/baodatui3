@@ -1,4 +1,8 @@
+use backend::global::handlers::user_handlers::{
+    CHANGE_CUR_USER_NAME_REQ_TYPE, GET_CUR_USER_REQ_TYPE,
+};
 use backend::test_client::{Client, Server};
+use backend::transport::request::RequestType;
 use std::time::Duration;
 use tokio::spawn;
 use tokio::time::sleep;
@@ -26,7 +30,7 @@ async fn client_connect_smoke() {
 async fn create_new_user_smoke() {
     let mut client = Client::new();
     client.connect().await;
-    let user = client.cur_user().await;
+    let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
     println!("user: {:?}", user);
     client.shutdown_and_wait_server_exit().await;
 }
@@ -35,14 +39,18 @@ async fn create_new_user_smoke() {
 async fn re_login_smoke() {
     let mut client = Client::new();
     client.connect().await;
-    let user = client.cur_user().await;
+    let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
     let uuid = user.uuid;
     let server = client.server();
     client.shutdown_client();
     let mut client2 = Client::new_with_server(server);
     client2.connect_with_uuid(uuid.as_str()).await;
-    let user2 = client2.cur_user().await;
+    let user2 = client2
+        .request_no_args(GET_CUR_USER_REQ_TYPE)
+        .await
+        .unwrap();
     assert_eq!(user.nick_name, user2.nick_name);
+    client2.shutdown_and_wait_server_exit().await;
 }
 
 #[tokio::test]
@@ -53,16 +61,35 @@ async fn multiple_user_smoke() {
     for _ in 0..10 {
         let mut client2 = Client::new_with_server(server.clone());
         client2.connect().await;
-        let user2 = client2.cur_user().await;
+        let user2 = client2
+            .request_no_args(GET_CUR_USER_REQ_TYPE)
+            .await
+            .unwrap();
         println!("user: {:?}", user2);
     }
+    client.shutdown_and_wait_server_exit().await;
 }
 
 #[tokio::test]
 async fn change_user_name_smoke() {
     let mut client = Client::new();
     client.connect().await;
-    client.change_cur_user_name("test").await.unwrap();
-    let user = client.cur_user().await;
+    client
+        .request(CHANGE_CUR_USER_NAME_REQ_TYPE, &"test".to_string())
+        .await
+        .unwrap();
+    let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
     assert_eq!(user.nick_name, "test");
+    client.shutdown_and_wait_server_exit().await;
+}
+
+const UNREGISTERED_REQ_TYPE: RequestType<(), ()> = RequestType::new("unregistered");
+
+#[tokio::test]
+async fn unregistered_handler_smoke() {
+    let mut client = Client::new();
+    client.connect().await;
+    let result = client.request_no_args(UNREGISTERED_REQ_TYPE).await;
+    assert!(result.is_err());
+    client.shutdown_and_wait_server_exit().await;
 }

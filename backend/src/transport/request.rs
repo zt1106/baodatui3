@@ -4,6 +4,22 @@ use futures_util::FutureExt;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
+use std::marker::PhantomData;
+
+/// this is useful for test client to send request
+pub struct RequestType<Req, Res> {
+    pub(crate) command: &'static str,
+    _phantom: PhantomData<(Req, Res)>,
+}
+
+impl<Req, Res> RequestType<Req, Res> {
+    pub const fn new(command: &'static str) -> Self {
+        Self {
+            command,
+            _phantom: PhantomData,
+        }
+    }
+}
 
 pub trait RawRequestHandler {
     fn handle_raw(&self, uid: u32, val: Value) -> BoxFuture<Result<Value, Error>>;
@@ -48,6 +64,7 @@ where
             let resp_result = self.inner.handle(uid, req).await?;
             let resp_val = serde_json::to_value(resp_result).map_err(Error::from)?;
             Ok(resp_val)
-        }.boxed()
+        }
+        .boxed()
     }
 }

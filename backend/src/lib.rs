@@ -9,7 +9,14 @@ pub mod test_client;
 pub mod transport;
 pub mod utils;
 
-use crate::global::handlers::user_handlers::{ChangeCurUserNameHandler, GetCurUserHandler};
+use crate::global::handlers::room_handlers::{
+    CreateRoomHandler, LeaveRoomHandler, ListRoomSimpleInfoHandler, CREATE_ROOM_REQ_TYPE,
+    LEAVE_ROOM_REQ_TYPE, LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
+};
+use crate::global::handlers::user_handlers::{
+    ChangeCurUserNameHandler, GetCurUserHandler, CHANGE_CUR_USER_NAME_REQ_TYPE,
+    GET_CUR_USER_REQ_TYPE,
+};
 use crate::global::rsocket_manager::rsocket_manager;
 use crate::model::user::User;
 use crate::rsocket::ServerRSocket;
@@ -83,6 +90,15 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
 }
 
 fn init_global_handlers() {
-    rsocket_manager().add_request_handler("GetCurUser", GetCurUserHandler);
-    rsocket_manager().add_request_handler("ChangeCurUserName", ChangeCurUserNameHandler);
+    // users
+    rsocket_manager().add_request_handler(GET_CUR_USER_REQ_TYPE, GetCurUserHandler);
+    rsocket_manager().add_request_handler(CHANGE_CUR_USER_NAME_REQ_TYPE, ChangeCurUserNameHandler);
+
+    // rooms
+    rsocket_manager().add_request_handler(CREATE_ROOM_REQ_TYPE, CreateRoomHandler);
+    rsocket_manager()
+        .add_request_handler(LIST_ROOM_SIMPLE_INFO_REQ_TYPE, ListRoomSimpleInfoHandler);
+    rsocket_manager().add_request_handler(LEAVE_ROOM_REQ_TYPE, LeaveRoomHandler);
+
+    // games
 }

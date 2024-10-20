@@ -1,12 +1,15 @@
 use crate::global::room_manager::room_manager;
 use crate::model::room::RoomSimpleInfo;
-use crate::transport::request::RequestHandler;
-use anyhow::Error;
+use crate::transport::request::{RequestHandler, RequestType};
+use anyhow::{anyhow, Error};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use std::ops::Deref;
 
 pub struct ListRoomSimpleInfoHandler;
+
+pub const LIST_ROOM_SIMPLE_INFO_REQ_TYPE: RequestType<(), Vec<RoomSimpleInfo>> =
+    RequestType::new("ListRoomSimpleInfo");
 
 impl RequestHandler<(), Vec<RoomSimpleInfo>> for ListRoomSimpleInfoHandler {
     fn handle(&self, _: u32, _: ()) -> BoxFuture<Result<Vec<RoomSimpleInfo>, Error>> {
@@ -23,8 +26,33 @@ impl RequestHandler<(), Vec<RoomSimpleInfo>> for ListRoomSimpleInfoHandler {
 
 pub struct CreateRoomHandler;
 
+pub const CREATE_ROOM_REQ_TYPE: RequestType<(), ()> = RequestType::new("CreateRoom");
+
 impl RequestHandler<(), ()> for CreateRoomHandler {
     fn handle(&self, uid: u32, _: ()) -> BoxFuture<Result<(), Error>> {
-        async move { Ok(()) }.boxed()
+        async move {
+            room_manager().create_room_by_user_id(uid)?;
+            Ok(())
+        }
+        .boxed()
+    }
+}
+
+pub struct LeaveRoomHandler;
+
+pub const LEAVE_ROOM_REQ_TYPE: RequestType<(), ()> = RequestType::new("LeaveRoom");
+
+impl RequestHandler<(), ()> for LeaveRoomHandler {
+    fn handle(&self, uid: u32, _: ()) -> BoxFuture<Result<(), Error>> {
+        async move {
+            let room_id = room_manager()
+                .find_room_by_user_id(uid)
+                .ok_or(anyhow!("user not in room"))?
+                .read()
+                .id;
+            room_manager().remove_user_from_room(uid, room_id)?;
+            Ok(())
+        }
+        .boxed()
     }
 }

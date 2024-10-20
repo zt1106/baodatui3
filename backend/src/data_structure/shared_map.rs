@@ -52,33 +52,19 @@ impl<T: WithId> GlobalMap<T> {
     }
 
     pub fn remove_id(&self, id: u32) {
-        let mut map = self.inner_map.write();
-        map.remove(&id);
+        self.inner_map.write().remove(&id);
     }
 
     pub fn remove(&self, t: Arc<RwLock<T>>) {
-        let id = t.read().id();
-        self.remove_id(id);
+        self.remove_id(t.read().id());
     }
 
     pub fn get(&self, id: u32) -> Option<Arc<RwLock<T>>> {
-        let map = self.inner_map.read();
-        map.get(&id).and_then(|t| Some(t.clone()))
+        self.inner_map.read().get(&id).cloned()
     }
 
     pub fn contains_id(&self, id: u32) -> bool {
         self.inner_map.read().contains_key(&id)
-    }
-
-    pub fn find_first(&self, f: impl Fn(&T) -> bool) -> Option<Arc<RwLock<T>>> {
-        let map = self.inner_map.read();
-        for (_, v) in map.iter() {
-            let t = v.read();
-            if f(&*t) {
-                return Some(v.clone());
-            }
-        }
-        None
     }
 
     pub fn all(&self) -> Vec<Arc<RwLock<T>>> {

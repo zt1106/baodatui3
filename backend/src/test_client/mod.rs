@@ -1,4 +1,8 @@
+use crate::global::handlers::user_handlers::{
+    CHANGE_CUR_USER_NAME_REQ_TYPE, GET_CUR_USER_REQ_TYPE,
+};
 use crate::model::user::User;
+use crate::transport::request::RequestType;
 use crate::{main_inner, SERVER_LOCAL_PORT};
 use anyhow::Error;
 use parking_lot::Mutex;
@@ -113,13 +117,17 @@ impl Client {
 
     pub fn shutdown_client(self) {}
 
-    pub async fn generic_request<Req, Res>(&self, command: &str, req: &Req) -> Result<Res, Error>
+    pub async fn request<Req, Res>(
+        &self,
+        req_type: RequestType<Req, Res>,
+        req: &Req,
+    ) -> Result<Res, Error>
     where
         Req: Serialize + DeserializeOwned,
         Res: Serialize + DeserializeOwned,
     {
         let req_v = serde_json::to_value(req)?;
-        let mut req_builder = Payload::builder().set_metadata_utf8(command);
+        let mut req_builder = Payload::builder().set_metadata_utf8(req_type.command);
         match req_v {
             Value::Null => {}
             _ => {
@@ -138,12 +146,10 @@ impl Client {
         Ok(serde_json::from_value(res_v)?)
     }
 
-    pub async fn cur_user(&self) -> User {
-        self.generic_request("GetCurUser", &()).await.unwrap()
-    }
-
-    pub async fn change_cur_user_name(&self, new_name: &str) -> Result<(), Error> {
-        self.generic_request("ChangeCurUserName", &new_name.to_string())
-            .await
+    pub async fn request_no_args<Res>(&self, req_type: RequestType<(), Res>) -> Result<Res, Error>
+    where
+        Res: Serialize + DeserializeOwned,
+    {
+        self.request(req_type, &()).await
     }
 }

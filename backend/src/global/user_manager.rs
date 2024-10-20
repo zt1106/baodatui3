@@ -63,10 +63,6 @@ impl UserManager {
         Self::id_map().contains_id(id)
     }
 
-    pub fn find_first(&self, f: impl Fn(&User) -> bool) -> Option<Arc<RwLock<User>>> {
-        Self::id_map().find_first(f)
-    }
-
     pub fn all(&self) -> Vec<Arc<RwLock<User>>> {
         Self::id_map().all()
     }
