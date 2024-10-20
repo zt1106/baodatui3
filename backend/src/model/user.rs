@@ -1,4 +1,4 @@
-use crate::model::configurable_rules::GameConfigurations;
+use crate::model::configs::GameConfigurations;
 use baodatui_macro::ID;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,7 @@ pub struct User {
     pub nick_name: String,
     pub uuid: String,
     pub login_timestamp: u64,
+    pub prepared: bool,
     pub preferred_game_config: Option<GameConfigurations>,
 }
 
@@ -23,6 +24,7 @@ impl Default for User {
             uuid,
             login_timestamp: 0,
             preferred_game_config: None,
+            prepared: false,
         }
     }
 }

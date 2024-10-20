@@ -1,37 +1,43 @@
-use crate::global::handlers::user_handlers::{
-    CHANGE_CUR_USER_NAME_REQ_TYPE, GET_CUR_USER_REQ_TYPE,
-};
-use crate::model::user::User;
+use crate::main_inner;
 use crate::transport::request::RequestType;
-use crate::{main_inner, SERVER_LOCAL_PORT};
 use anyhow::Error;
 use parking_lot::Mutex;
 use rsocket_rust::prelude::{Payload, RSocket, RSocketFactory};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
+use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::oneshot::Sender;
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
-use uuid::Uuid;
 
 pub struct Server {
     shutdown_main_send: Option<Sender<()>>,
     main_join_handle: Option<JoinHandle<()>>,
+    listening_port: u16,
+}
+
+fn get_available_port() -> u16 {
+    let socket = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = socket.local_addr().unwrap().port();
+    drop(socket);
+    port
 }
 
 impl Server {
     pub fn new() -> Self {
+        let listening_port = get_available_port();
         let (shutdown_main_send, recv) = tokio::sync::oneshot::channel::<()>();
-        let main_join_handle = spawn(async {
-            let _ = main_inner(Some(recv)).await;
+        let main_join_handle = spawn(async move {
+            let _ = main_inner(Some(recv), Some(listening_port)).await;
         });
         Self {
             shutdown_main_send: Some(shutdown_main_send),
             main_join_handle: Some(main_join_handle),
+            listening_port,
         }
     }
 
@@ -57,6 +63,18 @@ impl Client {
             server: Arc::new(Mutex::new(Server::new())),
             r_client: None,
         }
+    }
+
+    pub async fn new_and_connect() -> Self {
+        let mut c = Self::new();
+        c.connect().await;
+        c
+    }
+
+    pub async fn new_and_connect_with_server(server: Arc<Mutex<Server>>) -> Self {
+        let mut c = Self::new_with_server(server);
+        c.connect().await;
+        c
     }
 
     pub fn new_with_server(server: Arc<Mutex<Server>>) -> Self {
@@ -92,7 +110,7 @@ impl Client {
         let r_client = RSocketFactory::connect()
             .transport(
                 rsocket_rust_transport_websocket::WebsocketClientTransport::from(
-                    format!("127.0.0.1:{}", SERVER_LOCAL_PORT).as_str(),
+                    format!("127.0.0.1:{}", self.server.lock().listening_port).as_str(),
                 ),
             )
             .setup(

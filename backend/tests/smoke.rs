@@ -7,6 +7,8 @@ use std::time::Duration;
 use tokio::spawn;
 use tokio::time::sleep;
 
+// TODO tests can't be run in parallel
+
 #[tokio::test]
 async fn server_shutdown_smoke() {
     let mut server = Server::new();
@@ -21,15 +23,13 @@ async fn server_shutdown_smoke() {
 
 #[tokio::test]
 async fn client_connect_smoke() {
-    let mut client = Client::new();
-    client.connect().await;
+    let client = Client::new_and_connect().await;
     client.shutdown_and_wait_server_exit().await;
 }
 
 #[tokio::test]
 async fn create_new_user_smoke() {
-    let mut client = Client::new();
-    client.connect().await;
+    let client = Client::new_and_connect().await;
     let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
     println!("user: {:?}", user);
     client.shutdown_and_wait_server_exit().await;
@@ -37,8 +37,7 @@ async fn create_new_user_smoke() {
 
 #[tokio::test]
 async fn re_login_smoke() {
-    let mut client = Client::new();
-    client.connect().await;
+    let client = Client::new_and_connect().await;
     let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
     let uuid = user.uuid;
     let server = client.server();
@@ -55,8 +54,7 @@ async fn re_login_smoke() {
 
 #[tokio::test]
 async fn multiple_user_smoke() {
-    let mut client = Client::new();
-    client.connect().await;
+    let client = Client::new_and_connect().await;
     let server = client.server();
     for _ in 0..10 {
         let mut client2 = Client::new_with_server(server.clone());
@@ -72,8 +70,7 @@ async fn multiple_user_smoke() {
 
 #[tokio::test]
 async fn change_user_name_smoke() {
-    let mut client = Client::new();
-    client.connect().await;
+    let client = Client::new_and_connect().await;
     client
         .request(CHANGE_CUR_USER_NAME_REQ_TYPE, &"test".to_string())
         .await
@@ -87,8 +84,7 @@ const UNREGISTERED_REQ_TYPE: RequestType<(), ()> = RequestType::new("unregistere
 
 #[tokio::test]
 async fn unregistered_handler_smoke() {
-    let mut client = Client::new();
-    client.connect().await;
+    let client = Client::new_and_connect().await;
     let result = client.request_no_args(UNREGISTERED_REQ_TYPE).await;
     assert!(result.is_err());
     client.shutdown_and_wait_server_exit().await;

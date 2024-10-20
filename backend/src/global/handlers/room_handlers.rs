@@ -1,4 +1,5 @@
 use crate::global::room_manager::room_manager;
+use crate::model::configs::GameConfigurations;
 use crate::model::room::RoomSimpleInfo;
 use crate::transport::request::{RequestHandler, RequestType};
 use anyhow::{anyhow, Error};
@@ -51,6 +52,37 @@ impl RequestHandler<(), ()> for LeaveRoomHandler {
                 .read()
                 .id;
             room_manager().remove_user_from_room(uid, room_id)?;
+            Ok(())
+        }
+        .boxed()
+    }
+}
+
+pub struct EnterRoomHandler;
+
+pub const ENTER_ROOM_REQ_TYPE: RequestType<u32, ()> = RequestType::new("EnterRoom");
+
+impl RequestHandler<u32, ()> for EnterRoomHandler {
+    fn handle(&self, uid: u32, req: u32) -> BoxFuture<Result<(), Error>> {
+        async move { room_manager().add_user_to_room(uid, req) }.boxed()
+    }
+}
+
+pub struct ChangeGameConfigHandler;
+
+pub const CHANGE_GAME_CONFIG_REQ_TYPE: RequestType<GameConfigurations, ()> =
+    RequestType::new("ChangeGameConfig");
+
+impl RequestHandler<GameConfigurations, ()> for ChangeGameConfigHandler {
+    fn handle(&self, uid: u32, req: GameConfigurations) -> BoxFuture<Result<(), Error>> {
+        async move {
+            let room = room_manager()
+                .find_room_by_user_id(uid)
+                .ok_or(anyhow!("user not in room"))?;
+            if room.read().owner().read().id != uid {
+                return Err(anyhow!("user is not owner"));
+            }
+            room_manager().update_game_configs_of_room(room.read().id, req)?;
             Ok(())
         }
         .boxed()

@@ -1,10 +1,11 @@
-use crate::model::configurable_rules::GameConfigurations;
+use crate::model::configs::GameConfigurations;
 use crate::model::game::Game;
 use crate::model::user::User;
 use baodatui_macro::ID;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
+use std::ops::Deref;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -18,22 +19,29 @@ impl Default for RoomStatus {
     }
 }
 
+/// owner of the room is the first user in the room
 #[derive(ID, Default)]
 pub struct Room {
     pub id: u32,
     pub users: Vec<Arc<RwLock<User>>>,
-    game_configs: GameConfigurations,
-    cur_game: Option<Game>,
-    status: RoomStatus,
+    pub game_configs: GameConfigurations,
+    pub cur_game: Option<Game>,
+    pub status: RoomStatus,
+}
+
+impl Room {
+    pub fn owner(&self) -> Arc<RwLock<User>> {
+        self.users[0].clone()
+    }
 }
 
 // information needed to be displayed in lobby
 #[derive(Serialize, Deserialize)]
 pub struct RoomSimpleInfo {
-    id: u32,
-    status: RoomStatus,
-    cur_user_count: usize,
-    max_user_count: usize,
+    pub id: u32,
+    pub status: RoomStatus,
+    pub cur_user_count: usize,
+    pub max_user_count: usize,
 }
 
 impl From<&Room> for RoomSimpleInfo {
@@ -45,6 +53,46 @@ impl From<&Room> for RoomSimpleInfo {
             status: value.status.clone(),
             cur_user_count,
             max_user_count,
+        }
+    }
+}
+
+// information needed to render the room page
+#[derive(Serialize, Deserialize, Clone)]
+pub struct RoomDetailedInfo {
+    pub id: u32,
+    pub status: RoomStatus,
+    pub user_in_room_infos: Vec<UserInRoomInfo>,
+    pub config: GameConfigurations,
+}
+
+// user information needed to render the room page
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UserInRoomInfo {
+    pub prepared: bool,
+    pub nick_name: String,
+}
+
+impl From<&User> for UserInRoomInfo {
+    fn from(value: &User) -> Self {
+        Self {
+            prepared: value.prepared,
+            nick_name: value.nick_name.clone(),
+        }
+    }
+}
+
+impl From<&Room> for RoomDetailedInfo {
+    fn from(value: &Room) -> Self {
+        Self {
+            id: value.id,
+            status: value.status.clone(),
+            config: value.game_configs.clone(),
+            user_in_room_infos: value
+                .users
+                .iter()
+                .map(|u| u.read().deref().into())
+                .collect(),
         }
     }
 }

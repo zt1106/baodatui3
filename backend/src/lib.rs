@@ -10,8 +10,8 @@ pub mod transport;
 pub mod utils;
 
 use crate::global::handlers::room_handlers::{
-    CreateRoomHandler, LeaveRoomHandler, ListRoomSimpleInfoHandler, CREATE_ROOM_REQ_TYPE,
-    LEAVE_ROOM_REQ_TYPE, LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
+    CreateRoomHandler, EnterRoomHandler, LeaveRoomHandler, ListRoomSimpleInfoHandler,
+    CREATE_ROOM_REQ_TYPE, ENTER_ROOM_REQ_TYPE, LEAVE_ROOM_REQ_TYPE, LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
 };
 use crate::global::handlers::user_handlers::{
     ChangeCurUserNameHandler, GetCurUserHandler, CHANGE_CUR_USER_NAME_REQ_TYPE,
@@ -32,9 +32,12 @@ use tokio::select;
 use tokio::sync::oneshot;
 use utils::cur_timestamp;
 
-const SERVER_LOCAL_PORT: u16 = 8080;
+const DEFAULT_SERVER_LOCAL_PORT: u16 = 8080;
 
-pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Result<()> {
+pub async fn main_inner(
+    stop_signal_recv: Option<oneshot::Receiver<()>>,
+    port: Option<u16>,
+) -> Result<()> {
     init_global_handlers();
     let server_future = RSocketFactory::receive()
         .acceptor(Box::new(|setup, client_rsocket| {
@@ -72,7 +75,7 @@ pub async fn main_inner(stop_signal_recv: Option<oneshot::Receiver<()>>) -> Resu
         }))
         .transport(WebsocketServerTransport::from(format!(
             "127.0.0.1:{}",
-            SERVER_LOCAL_PORT
+            port.unwrap_or(DEFAULT_SERVER_LOCAL_PORT)
         )))
         .serve();
     if stop_signal_recv.is_none() {
@@ -99,6 +102,7 @@ fn init_global_handlers() {
     rsocket_manager()
         .add_request_handler(LIST_ROOM_SIMPLE_INFO_REQ_TYPE, ListRoomSimpleInfoHandler);
     rsocket_manager().add_request_handler(LEAVE_ROOM_REQ_TYPE, LeaveRoomHandler);
+    rsocket_manager().add_request_handler(ENTER_ROOM_REQ_TYPE, EnterRoomHandler);
 
     // games
 }

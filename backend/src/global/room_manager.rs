@@ -1,5 +1,6 @@
 use crate::data_structure::shared_map::GlobalMap;
 use crate::global::user_manager::user_manager;
+use crate::model::configs::GameConfigurations;
 use crate::model::room::Room;
 use anyhow::{anyhow, Error};
 use parking_lot::RwLock;
@@ -83,5 +84,17 @@ impl RoomManager {
 
     pub fn all(&self) -> Vec<Arc<RwLock<Room>>> {
         Self::id_map().all()
+    }
+
+    pub fn update_game_configs_of_room(
+        &self,
+        room_id: u32,
+        configs: GameConfigurations,
+    ) -> Result<(), Error> {
+        let room = Self::id_map()
+            .get(room_id)
+            .ok_or(anyhow!("Room not found {}", room_id))?;
+        room.write().game_configs = configs;
+        Ok(())
     }
 }

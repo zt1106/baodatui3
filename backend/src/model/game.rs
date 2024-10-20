@@ -1,4 +1,4 @@
-use crate::model::configurable_rules::GameConfigurations;
+use crate::model::configs::GameConfigurations;
 use crate::model::user::User;
 use std::sync::Arc;
 use tokio::sync::RwLock;
