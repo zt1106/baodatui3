@@ -82,7 +82,8 @@ impl RequestHandler<GameConfigurations, ()> for ChangeGameConfigHandler {
             if room.read().owner().read().id != uid {
                 return Err(anyhow!("user is not owner"));
             }
-            room_manager().update_game_configs_of_room(room.read().id, req)?;
+            let room_id = room.read().id;
+            room_manager().update_game_configs_of_room(room_id, req)?;
             Ok(())
         }
         .boxed()

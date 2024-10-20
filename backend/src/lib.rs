@@ -10,8 +10,9 @@ pub mod transport;
 pub mod utils;
 
 use crate::global::handlers::room_handlers::{
-    CreateRoomHandler, EnterRoomHandler, LeaveRoomHandler, ListRoomSimpleInfoHandler,
-    CREATE_ROOM_REQ_TYPE, ENTER_ROOM_REQ_TYPE, LEAVE_ROOM_REQ_TYPE, LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
+    ChangeGameConfigHandler, CreateRoomHandler, EnterRoomHandler, LeaveRoomHandler,
+    ListRoomSimpleInfoHandler, CHANGE_GAME_CONFIG_REQ_TYPE, CREATE_ROOM_REQ_TYPE,
+    ENTER_ROOM_REQ_TYPE, LEAVE_ROOM_REQ_TYPE, LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
 };
 use crate::global::handlers::user_handlers::{
     ChangeCurUserNameHandler, GetCurUserHandler, CHANGE_CUR_USER_NAME_REQ_TYPE,
@@ -103,6 +104,7 @@ fn init_global_handlers() {
         .add_request_handler(LIST_ROOM_SIMPLE_INFO_REQ_TYPE, ListRoomSimpleInfoHandler);
     rsocket_manager().add_request_handler(LEAVE_ROOM_REQ_TYPE, LeaveRoomHandler);
     rsocket_manager().add_request_handler(ENTER_ROOM_REQ_TYPE, EnterRoomHandler);
+    rsocket_manager().add_request_handler(CHANGE_GAME_CONFIG_REQ_TYPE, ChangeGameConfigHandler);
 
     // games
 }

@@ -73,7 +73,7 @@ impl RSocket for ServerRSocket {
 
     fn request_channel(
         &self,
-        mut reqs: Flux<anyhow::Result<Payload>>,
+        reqs: Flux<anyhow::Result<Payload>>,
     ) -> Flux<anyhow::Result<Payload>> {
         todo!()
     }

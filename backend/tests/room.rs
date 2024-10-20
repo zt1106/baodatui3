@@ -103,7 +103,7 @@ async fn enter_room_over_capacity_test() {
         .await
         .unwrap();
     let room_id = list.get(0).unwrap().id;
-    for i in 0..10 {
+    for _i in 0..10 {
         let client2 = Client::new_and_connect_with_server(client.server()).await;
         client2
             .request(ENTER_ROOM_REQ_TYPE, &room_id)
@@ -129,3 +129,6 @@ async fn non_active_room_test() {
         .unwrap();
     assert_eq!(list.len(), 0);
 }
+
+#[tokio::test]
+async fn room_detailed_info_event_test() {}
