@@ -2,8 +2,11 @@ use backend::global::handlers::room_handlers::{
     CHANGE_GAME_CONFIG_REQ_TYPE, CREATE_ROOM_REQ_TYPE, ENTER_ROOM_REQ_TYPE, LEAVE_ROOM_REQ_TYPE,
     LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
 };
+use backend::global::settings::system_settings_arc;
 use backend::model::configs::GameConfigurations;
 use backend::test_client::Client;
+use std::time::Duration;
+use tokio::time::sleep;
 
 #[tokio::test]
 async fn create_room_test() {
@@ -110,4 +113,19 @@ async fn enter_room_over_capacity_test() {
 }
 
 #[tokio::test]
-async fn non_active_room_test() {}
+async fn non_active_room_test() {
+    let client = Client::new_and_connect().await;
+    system_settings_arc().write().non_active_room_time = 50;
+    client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
+    let list = client
+        .request_no_args(LIST_ROOM_SIMPLE_INFO_REQ_TYPE)
+        .await
+        .unwrap();
+    assert_eq!(list.len(), 1);
+    sleep(Duration::from_millis(50)).await;
+    let list = client
+        .request_no_args(LIST_ROOM_SIMPLE_INFO_REQ_TYPE)
+        .await
+        .unwrap();
+    assert_eq!(list.len(), 0);
+}

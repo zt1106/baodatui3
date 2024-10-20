@@ -1,4 +1,5 @@
 use crate::data_structure::shared_map::GlobalMap;
+use crate::global::settings::system_settings;
 use crate::global::user_manager::user_manager;
 use crate::model::configs::GameConfigurations;
 use crate::model::room::Room;
@@ -6,6 +7,8 @@ use anyhow::{anyhow, Error};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
+use std::time::Duration;
+use tokio::spawn;
 
 pub fn room_manager() -> &'static RoomManager {
     static ROOM_MANAGER: OnceLock<RoomManager> = OnceLock::new();
@@ -28,12 +31,36 @@ impl RoomManager {
             return Err(anyhow!("User already in a room"));
         }
         let room = Self::id_map().add_default();
+        let room_id = room.read().id;
         room.write().users.push(
             user_manager()
                 .get(user_id)
                 .ok_or(anyhow!("User not found"))?,
         );
         self.user_id_map.write().insert(user_id, room.clone());
+        let mut room_detail_changed_recv = room.read().detailed_info_change_watch.clone_recv();
+        let timeout = system_settings().non_active_room_time;
+        spawn(async move {
+            loop {
+                let result = tokio::time::timeout(
+                    Duration::from_millis(timeout),
+                    room_detail_changed_recv.changed(),
+                )
+                .await;
+                match result {
+                    Ok(inner_result) => match inner_result {
+                        Ok(_) => {}
+                        Err(_) => {
+                            break;
+                        }
+                    },
+                    Err(_) => {
+                        room_manager().remove_room(room_id);
+                        break;
+                    }
+                }
+            }
+        });
         Ok(room)
     }
 
@@ -46,7 +73,7 @@ impl RoomManager {
             .get(room_id)
             .ok_or(anyhow!("Room not found {}", room_id))?;
         if room.read().users.len()
-            == room.read().game_configs.basic_configs.max_player_count as usize
+            == room.read().game_configs().basic_configs.max_player_count as usize
         {
             return Err(anyhow!("Room is full"));
         }
@@ -99,7 +126,7 @@ impl RoomManager {
         let room = Self::id_map()
             .get(room_id)
             .ok_or(anyhow!("Room not found {}", room_id))?;
-        room.write().game_configs = configs;
+        room.write().update_game_configs(configs);
         Ok(())
     }
 }

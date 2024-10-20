@@ -1,21 +1,22 @@
 use crate::model::configs::GameConfigurations;
 use crate::model::game::Game;
 use crate::model::user::User;
+use crate::utils::WatcherWrapper;
 use baodatui_macro::ID;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
 use std::ops::Deref;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum RoomStatus {
-    A,
+    Waiting,
+    InGame,
 }
 
 impl Default for RoomStatus {
     fn default() -> Self {
-        RoomStatus::A
+        RoomStatus::Waiting
     }
 }
 
@@ -24,14 +25,29 @@ impl Default for RoomStatus {
 pub struct Room {
     pub id: u32,
     pub users: Vec<Arc<RwLock<User>>>,
-    pub game_configs: GameConfigurations,
+    game_configs: GameConfigurations,
     pub cur_game: Option<Game>,
     pub status: RoomStatus,
+    pub detailed_info_change_watch: WatcherWrapper<RoomSimpleInfo>,
 }
 
 impl Room {
     pub fn owner(&self) -> Arc<RwLock<User>> {
         self.users[0].clone()
+    }
+
+    pub fn update_users(&mut self, f: impl FnOnce(&mut Vec<Arc<RwLock<User>>>) -> ()) {
+        f(&mut self.users);
+        self.detailed_info_change_watch.send(self.deref().into());
+    }
+
+    pub fn game_configs(&self) -> &GameConfigurations {
+        &self.game_configs
+    }
+
+    pub fn update_game_configs(&mut self, configs: GameConfigurations) {
+        self.game_configs = configs;
+        self.detailed_info_change_watch.send(self.deref().into());
     }
 }
 
