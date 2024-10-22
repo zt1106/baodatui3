@@ -131,4 +131,12 @@ async fn non_active_room_test() {
 }
 
 #[tokio::test]
-async fn room_detailed_info_event_test() {}
+async fn room_detailed_info_event_test() {
+    let client = Client::new_and_connect().await;
+    client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
+    let list = client
+        .request_no_args(LIST_ROOM_SIMPLE_INFO_REQ_TYPE)
+        .await
+        .unwrap();
+    let room_id = list.get(0).unwrap().id;
+}

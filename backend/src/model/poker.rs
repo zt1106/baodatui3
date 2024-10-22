@@ -130,7 +130,7 @@ impl Card {
     // pub fn is_prime_suit(&self, prime_suit: Option<Suit>) -> bool {
     //     self.suit == prime_suit
     // }
-    // 
+    //
     // pub fn is_flex_prime(&self) -> bool {
     //     if self.is_joker() {
     //         return true;
@@ -151,7 +151,7 @@ impl Card {
     //         None => false,
     //     };
     // }
-    // 
+    //
     // pub fn real_power(&self, prime_suit: Option<Suit>) -> i32 {
     //     if self.is_prime_five(prime_suit) {
     //         return 10000000;
@@ -170,5 +170,3 @@ impl Card {
     //     pow
     // }
 }
-
-

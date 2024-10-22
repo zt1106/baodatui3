@@ -1,11 +1,15 @@
 use crate::global::room_manager::room_manager;
 use crate::model::configs::GameConfigurations;
-use crate::model::room::RoomSimpleInfo;
+use crate::model::room::{RoomDetailedInfo, RoomSimpleInfo};
 use crate::transport::request::{RequestHandler, RequestType};
+use crate::transport::stream::StreamHandler;
 use anyhow::{anyhow, Error};
+use futures::Stream;
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use std::ops::Deref;
+use std::pin::Pin;
+use tokio::spawn;
 
 pub struct ListRoomSimpleInfoHandler;
 
@@ -87,5 +91,62 @@ impl RequestHandler<GameConfigurations, ()> for ChangeGameConfigHandler {
             Ok(())
         }
         .boxed()
+    }
+}
+
+pub struct RoomDetailedInfoStreamHandler;
+
+pub const ROOM_DETAILED_INFO_STREAM_TYPE: RequestType<(), RoomDetailedInfo> =
+    RequestType::new("RoomDetailedInfoStream");
+
+impl StreamHandler<(), RoomDetailedInfo> for RoomDetailedInfoStreamHandler {
+    fn handle(
+        &self,
+        uid: u32,
+        _req: (),
+    ) -> BoxFuture<Result<Pin<Box<dyn Stream<Item = RoomDetailedInfo> + Send + 'static>>, Error>>
+    {
+        async move {
+            let room = room_manager()
+                .find_room_by_user_id(uid)
+                .ok_or(anyhow!("user not in room"))?;
+            let mut watch_recv = room.read().detailed_info_change_watch.clone_recv();
+            let (send, recv) = futures_channel::mpsc::unbounded::<RoomDetailedInfo>();
+            spawn(async move {
+                loop {
+                    {
+                        let cur = watch_recv.borrow_and_update();
+                        if let Some(ref info) = *cur {
+                            if let Err(_) = send.unbounded_send(info.clone()) {
+                                break;
+                            }
+                        }
+                    }
+                    if let Err(_) = watch_recv.changed().await {
+                        break;
+                    }
+                }
+            });
+            let stream: Pin<Box<dyn Stream<Item = RoomDetailedInfo> + Send + 'static>> =
+                Box::pin(recv);
+            Ok(stream)
+        }
+        .boxed()
+    }
+}
+
+pub struct AllRoomSimpleInfoStreamHandler;
+
+pub const ALL_ROOM_SIMPLE_INFO_STREAM_TYPE: RequestType<(), Vec<RoomSimpleInfo>> =
+    RequestType::new("AllRoomSimpleInfoStream");
+
+impl StreamHandler<(), Vec<RoomSimpleInfo>> for AllRoomSimpleInfoStreamHandler {
+    fn handle(
+        &self,
+        uid: u32,
+        req: (),
+    ) -> BoxFuture<Result<Pin<Box<dyn Stream<Item = Vec<RoomSimpleInfo>> + Send + 'static>>, Error>>
+    {
+        todo!()
     }
 }

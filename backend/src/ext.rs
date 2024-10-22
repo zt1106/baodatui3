@@ -1,7 +1,7 @@
-use std::future::Future;
-use std::pin::Pin;
 use anyhow::Error;
 use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 
 pub trait IntoResult<T> {
     fn into_result(self) -> Result<T, Error>;

@@ -45,13 +45,13 @@ impl RSocketManager {
 
     pub fn add_stream_handler<Req, T>(
         &self,
-        command: impl Into<String>,
+        req_type: RequestType<Req, T>,
         handler: impl StreamHandler<Req, T> + 'static,
     ) where
         Req: Serialize + DeserializeOwned + 'static + Send,
         T: Serialize + DeserializeOwned + Send + 'static,
     {
-        let command = command.into();
+        let command = req_type.command.to_string();
         if self.raw_stream_handler_map.read().contains_key(&command) {
             panic!("Tried to add a handler for {} twice", command);
         }
@@ -67,5 +67,10 @@ impl RSocketManager {
             .get(command)
             .unwrap()
             .clone()
+    }
+
+    pub fn reset(&self) {
+        self.raw_req_handler_map.write().clear();
+        self.raw_stream_handler_map.write().clear();
     }
 }

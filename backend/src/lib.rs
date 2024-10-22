@@ -18,7 +18,9 @@ use crate::global::handlers::user_handlers::{
     ChangeCurUserNameHandler, GetCurUserHandler, CHANGE_CUR_USER_NAME_REQ_TYPE,
     GET_CUR_USER_REQ_TYPE,
 };
+use crate::global::room_manager::room_manager;
 use crate::global::rsocket_manager::rsocket_manager;
+use crate::global::settings::{system_settings_arc, SystemSettings};
 use crate::model::user::User;
 use crate::rsocket::ServerRSocket;
 use futures::executor;
@@ -39,6 +41,7 @@ pub async fn main_inner(
     stop_signal_recv: Option<oneshot::Receiver<()>>,
     port: Option<u16>,
 ) -> Result<()> {
+    reset_all_global_maps();
     init_global_handlers();
     let server_future = RSocketFactory::receive()
         .acceptor(Box::new(|setup, client_rsocket| {
@@ -91,6 +94,15 @@ pub async fn main_inner(
             Ok(())
         }
     }
+}
+
+/// only makes sense when testing
+fn reset_all_global_maps() {
+    room_manager().reset();
+    rsocket_manager().reset();
+    user_manager().reset();
+    system_settings_arc().write().non_active_room_time =
+        SystemSettings::default().non_active_room_time;
 }
 
 fn init_global_handlers() {

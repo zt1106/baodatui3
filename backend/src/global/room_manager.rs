@@ -129,4 +129,9 @@ impl RoomManager {
         room.write().update_game_configs(configs);
         Ok(())
     }
+
+    pub fn reset(&self) {
+        self.user_id_map.write().clear();
+        Self::id_map().reset();
+    }
 }

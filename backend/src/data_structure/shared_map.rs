@@ -70,4 +70,8 @@ impl<T: WithId> GlobalMap<T> {
     pub fn all(&self) -> Vec<Arc<RwLock<T>>> {
         self.inner_map.read().values().cloned().collect()
     }
+
+    pub fn reset(&self) {
+        self.inner_map.write().clear();
+    }
 }

@@ -33,7 +33,10 @@ impl UserManager {
     }
 
     pub fn add_default(&self) -> Arc<RwLock<User>> {
-        Self::id_map().add_default()
+        let u = Self::id_map().add_default();
+        let uuid = u.read().uuid.clone();
+        self.uuid_map.write().insert(uuid, u.clone());
+        u
     }
 
     pub fn remove_id(&self, id: u32) {
@@ -65,5 +68,10 @@ impl UserManager {
 
     pub fn all(&self) -> Vec<Arc<RwLock<User>>> {
         Self::id_map().all()
+    }
+
+    pub fn reset(&self) {
+        Self::id_map().reset();
+        self.uuid_map.write().clear();
     }
 }

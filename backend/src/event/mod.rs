@@ -3,9 +3,7 @@ pub trait Event {
 }
 
 pub struct EventType {
-    debounce_policy: EventDebouncePolicy
+    debounce_policy: EventDebouncePolicy,
 }
 
-enum EventDebouncePolicy {
-    
-}
+enum EventDebouncePolicy {}

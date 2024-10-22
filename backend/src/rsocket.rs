@@ -58,7 +58,7 @@ impl RSocket for ServerRSocket {
         let command = command.unwrap();
         let recv_result = rsocket_manager()
             .raw_stream_handler(command)
-            .handle(req_v.unwrap());
+            .handle(self.user_id, req_v.unwrap());
         if let Err(err) = recv_result {
             return Box::pin(stream! {
                yield Err(err.into());

@@ -28,7 +28,7 @@ pub struct Room {
     game_configs: GameConfigurations,
     pub cur_game: Option<Game>,
     pub status: RoomStatus,
-    pub detailed_info_change_watch: WatcherWrapper<RoomSimpleInfo>,
+    pub detailed_info_change_watch: WatcherWrapper<RoomDetailedInfo>,
 }
 
 impl Room {
@@ -52,7 +52,7 @@ impl Room {
 }
 
 // information needed to be displayed in lobby
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct RoomSimpleInfo {
     pub id: u32,
     pub status: RoomStatus,

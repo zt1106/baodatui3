@@ -1,12 +1,16 @@
 use crate::main_inner;
 use crate::transport::request::RequestType;
 use anyhow::Error;
+use futures::Stream;
+use futures_util::StreamExt;
 use parking_lot::Mutex;
 use rsocket_rust::prelude::{Payload, RSocket, RSocketFactory};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
+use std::future;
 use std::net::TcpListener;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::spawn;
@@ -169,5 +173,37 @@ impl Client {
         Res: Serialize + DeserializeOwned,
     {
         self.request(req_type, &()).await
+    }
+
+    pub async fn stream<Req, T>(
+        &self,
+        req_type: RequestType<Req, T>,
+        req: &Req,
+    ) -> Result<Pin<Box<dyn Stream<Item = T>>>, Error>
+    where
+        Req: Serialize + DeserializeOwned,
+        T: Serialize + DeserializeOwned + 'static,
+    {
+        let req_v = serde_json::to_value(req)?;
+        let mut req_builder = Payload::builder().set_metadata_utf8(req_type.command);
+        match req_v {
+            Value::Null => {}
+            _ => {
+                req_builder = req_builder.set_data_utf8(serde_json::to_string(&req_v)?.as_str());
+            }
+        }
+        let stream = self.r_client().request_stream(req_builder.build());
+        let mapped = stream.filter_map(|t| {
+            let r = match t {
+                Ok(p) => match p.data_utf8() {
+                    None => None,
+                    Some(v) => serde_json::from_str::<T>(v).ok(),
+                },
+                Err(_) => None,
+            };
+            future::ready(r)
+        });
+        let boxed: Pin<Box<dyn Stream<Item = T>>> = Box::pin(mapped);
+        Ok(boxed)
     }
 }
