@@ -206,4 +206,14 @@ impl Client {
         let boxed: Pin<Box<dyn Stream<Item = T>>> = Box::pin(mapped);
         Ok(boxed)
     }
+
+    pub async fn stream_no_args<T>(
+        &self,
+        req_type: RequestType<(), T>,
+    ) -> Result<Pin<Box<dyn Stream<Item = T>>>, Error>
+    where
+        T: Serialize + DeserializeOwned + 'static,
+    {
+        self.stream(req_type, &()).await
+    }
 }

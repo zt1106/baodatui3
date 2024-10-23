@@ -10,6 +10,7 @@ use tokio::time::sleep;
 // TODO tests can't be run in parallel
 
 #[tokio::test]
+
 async fn server_shutdown_smoke() {
     let mut server = Server::new();
     let shutdown_send = server.shutdown_send();
@@ -22,12 +23,14 @@ async fn server_shutdown_smoke() {
 }
 
 #[tokio::test]
+
 async fn client_connect_smoke() {
     let client = Client::new_and_connect().await;
     client.shutdown_and_wait_server_exit().await;
 }
 
 #[tokio::test]
+
 async fn create_new_user_smoke() {
     let client = Client::new_and_connect().await;
     let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
@@ -36,6 +39,7 @@ async fn create_new_user_smoke() {
 }
 
 #[tokio::test]
+
 async fn re_login_smoke() {
     let client = Client::new_and_connect().await;
     let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
@@ -53,6 +57,7 @@ async fn re_login_smoke() {
 }
 
 #[tokio::test]
+
 async fn multiple_user_smoke() {
     let client = Client::new_and_connect().await;
     let server = client.server();
@@ -69,6 +74,7 @@ async fn multiple_user_smoke() {
 }
 
 #[tokio::test]
+
 async fn change_user_name_smoke() {
     let client = Client::new_and_connect().await;
     client
@@ -83,9 +89,18 @@ async fn change_user_name_smoke() {
 const UNREGISTERED_REQ_TYPE: RequestType<(), ()> = RequestType::new("unregistered");
 
 #[tokio::test]
+
 async fn unregistered_handler_smoke() {
     let client = Client::new_and_connect().await;
     let result = client.request_no_args(UNREGISTERED_REQ_TYPE).await;
     assert!(result.is_err());
     client.shutdown_and_wait_server_exit().await;
 }
+
+#[tokio::test]
+
+async fn stream_smoke() {}
+
+#[tokio::test]
+
+async fn stream_debounce_smoke() {}

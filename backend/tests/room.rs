@@ -9,6 +9,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 #[tokio::test]
+
 async fn create_room_test() {
     let client = Client::new_and_connect().await;
     let list = client
@@ -26,6 +27,7 @@ async fn create_room_test() {
 }
 
 #[tokio::test]
+
 async fn last_user_leave_room_test() {
     let client = Client::new_and_connect().await;
     client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
@@ -44,6 +46,7 @@ async fn last_user_leave_room_test() {
 }
 
 #[tokio::test]
+
 async fn multiple_users_enter_room_test() {
     let client = Client::new_and_connect().await;
     client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
@@ -67,6 +70,7 @@ async fn multiple_users_enter_room_test() {
 }
 
 #[tokio::test]
+
 async fn change_game_config_test() {
     let client = Client::new_and_connect().await;
     client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
@@ -80,6 +84,7 @@ async fn change_game_config_test() {
 }
 
 #[tokio::test]
+
 async fn non_owner_change_config_test() {
     let client = Client::new_and_connect().await;
     client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
@@ -113,6 +118,7 @@ async fn enter_room_over_capacity_test() {
 }
 
 #[tokio::test]
+
 async fn non_active_room_test() {
     let client = Client::new_and_connect().await;
     system_settings_arc().write().non_active_room_time = 50;
@@ -131,6 +137,7 @@ async fn non_active_room_test() {
 }
 
 #[tokio::test]
+
 async fn room_detailed_info_event_test() {
     let client = Client::new_and_connect().await;
     client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();

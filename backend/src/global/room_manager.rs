@@ -2,10 +2,12 @@ use crate::data_structure::shared_map::GlobalMap;
 use crate::global::settings::system_settings;
 use crate::global::user_manager::user_manager;
 use crate::model::configs::GameConfigurations;
-use crate::model::room::Room;
+use crate::model::room::{Room, RoomSimpleInfo};
+use crate::utils::WatcherWrapper;
 use anyhow::{anyhow, Error};
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use tokio::spawn;
@@ -18,6 +20,7 @@ pub fn room_manager() -> &'static RoomManager {
 #[derive(Default)]
 pub struct RoomManager {
     user_id_map: Arc<RwLock<HashMap<u32, Arc<RwLock<Room>>>>>,
+    all_rooms_simple_info_change_watch: WatcherWrapper<Vec<RoomSimpleInfo>>,
 }
 
 impl RoomManager {
@@ -61,6 +64,8 @@ impl RoomManager {
                 }
             }
         });
+        self.all_rooms_simple_info_change_watch
+            .send(self.all_rooms_simple_info());
         Ok(room)
     }
 
@@ -83,6 +88,8 @@ impl RoomManager {
                 .ok_or(anyhow!("User not found {}", user_id))?,
         );
         self.user_id_map.write().insert(user_id, room.clone());
+        self.all_rooms_simple_info_change_watch
+            .send(self.all_rooms_simple_info());
         Ok(())
     }
 
@@ -100,6 +107,8 @@ impl RoomManager {
             // when last person leave, remove room (room must have at least one user)
             self.remove_room(room.read().id);
         }
+        self.all_rooms_simple_info_change_watch
+            .send(self.all_rooms_simple_info());
         Ok(())
     }
 
@@ -112,10 +121,16 @@ impl RoomManager {
         self.user_id_map
             .write()
             .retain(|_, v| v.read().id != room_id);
+        self.all_rooms_simple_info_change_watch
+            .send(self.all_rooms_simple_info());
     }
 
     pub fn all(&self) -> Vec<Arc<RwLock<Room>>> {
         Self::id_map().all()
+    }
+
+    fn all_rooms_simple_info(&self) -> Vec<RoomSimpleInfo> {
+        self.all().iter().map(|r| r.read().deref().into()).collect()
     }
 
     pub fn update_game_configs_of_room(
@@ -126,7 +141,13 @@ impl RoomManager {
         let room = Self::id_map()
             .get(room_id)
             .ok_or(anyhow!("Room not found {}", room_id))?;
+        let old = room.read().game_configs().basic_configs.max_player_count;
+        let max_player_count_changed = old != configs.basic_configs.max_player_count;
         room.write().update_game_configs(configs);
+        if max_player_count_changed {
+            self.all_rooms_simple_info_change_watch
+                .send(self.all_rooms_simple_info());
+        }
         Ok(())
     }
 
