@@ -1,16 +1,17 @@
+use backend::global::handlers::room_handlers::{
+    ALL_ROOM_SIMPLE_INFO_STREAM_TYPE, CREATE_ROOM_REQ_TYPE,
+};
 use backend::global::handlers::user_handlers::{
     CHANGE_CUR_USER_NAME_REQ_TYPE, GET_CUR_USER_REQ_TYPE,
 };
 use backend::test_client::{Client, Server};
 use backend::transport::request::RequestType;
+use futures_util::StreamExt;
 use std::time::Duration;
 use tokio::spawn;
-use tokio::time::sleep;
-
-// TODO tests can't be run in parallel
+use tokio::time::{sleep, timeout};
 
 #[tokio::test]
-
 async fn server_shutdown_smoke() {
     let mut server = Server::new();
     let shutdown_send = server.shutdown_send();
@@ -23,14 +24,12 @@ async fn server_shutdown_smoke() {
 }
 
 #[tokio::test]
-
 async fn client_connect_smoke() {
     let client = Client::new_and_connect().await;
     client.shutdown_and_wait_server_exit().await;
 }
 
 #[tokio::test]
-
 async fn create_new_user_smoke() {
     let client = Client::new_and_connect().await;
     let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
@@ -39,7 +38,6 @@ async fn create_new_user_smoke() {
 }
 
 #[tokio::test]
-
 async fn re_login_smoke() {
     let client = Client::new_and_connect().await;
     let user = client.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
@@ -57,7 +55,6 @@ async fn re_login_smoke() {
 }
 
 #[tokio::test]
-
 async fn multiple_user_smoke() {
     let client = Client::new_and_connect().await;
     let server = client.server();
@@ -74,7 +71,6 @@ async fn multiple_user_smoke() {
 }
 
 #[tokio::test]
-
 async fn change_user_name_smoke() {
     let client = Client::new_and_connect().await;
     client
@@ -89,7 +85,6 @@ async fn change_user_name_smoke() {
 const UNREGISTERED_REQ_TYPE: RequestType<(), ()> = RequestType::new("unregistered");
 
 #[tokio::test]
-
 async fn unregistered_handler_smoke() {
     let client = Client::new_and_connect().await;
     let result = client.request_no_args(UNREGISTERED_REQ_TYPE).await;
@@ -98,9 +93,28 @@ async fn unregistered_handler_smoke() {
 }
 
 #[tokio::test]
-
-async fn stream_smoke() {}
+async fn stream_smoke() {
+    let client = Client::new_and_connect().await;
+    let mut all_room_stream = client
+        .stream_no_args(ALL_ROOM_SIMPLE_INFO_STREAM_TYPE)
+        .await
+        .unwrap();
+    client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
+    let n = all_room_stream.next().await.unwrap();
+    assert_eq!(n.len(), 1);
+}
 
 #[tokio::test]
-
-async fn stream_debounce_smoke() {}
+async fn stream_debounce_smoke() {
+    let client = Client::new_and_connect().await;
+    let mut all_room_stream = client
+        .stream_no_args(ALL_ROOM_SIMPLE_INFO_STREAM_TYPE)
+        .await
+        .unwrap();
+    client.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
+    let client2 = Client::new_and_connect_with_server(client.server()).await;
+    client2.request_no_args(CREATE_ROOM_REQ_TYPE).await.unwrap();
+    all_room_stream.next().await.unwrap();
+    let should_timeout_result = timeout(Duration::from_millis(1), all_room_stream.next()).await;
+    assert!(should_timeout_result.is_err());
+}

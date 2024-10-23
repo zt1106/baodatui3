@@ -68,9 +68,4 @@ impl RSocketManager {
             .unwrap()
             .clone()
     }
-
-    pub fn reset(&self) {
-        self.raw_req_handler_map.write().clear();
-        self.raw_stream_handler_map.write().clear();
-    }
 }

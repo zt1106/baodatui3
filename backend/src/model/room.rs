@@ -38,7 +38,11 @@ impl Room {
 
     pub fn update_users(&mut self, f: impl FnOnce(&mut Vec<Arc<RwLock<User>>>) -> ()) {
         f(&mut self.users);
-        self.detailed_info_change_watch.send(self.deref().into());
+        self.notify_detail_changed();
+    }
+
+    pub fn notify_detail_changed(&mut self) {
+        self.detailed_info_change_watch.send(self.deref().into())
     }
 
     pub fn game_configs(&self) -> &GameConfigurations {
@@ -47,7 +51,7 @@ impl Room {
 
     pub fn update_game_configs(&mut self, configs: GameConfigurations) {
         self.game_configs = configs;
-        self.detailed_info_change_watch.send(self.deref().into());
+        self.notify_detail_changed();
     }
 }
 

@@ -69,9 +69,4 @@ impl UserManager {
     pub fn all(&self) -> Vec<Arc<RwLock<User>>> {
         Self::id_map().all()
     }
-
-    pub fn reset(&self) {
-        Self::id_map().reset();
-        self.uuid_map.write().clear();
-    }
 }

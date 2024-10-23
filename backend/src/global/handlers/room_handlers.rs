@@ -1,4 +1,5 @@
 use crate::global::room_manager::room_manager;
+use crate::global::settings::system_settings;
 use crate::model::configs::GameConfigurations;
 use crate::model::room::{RoomDetailedInfo, RoomSimpleInfo};
 use crate::transport::request::{RequestHandler, RequestType};
@@ -6,10 +7,12 @@ use crate::transport::stream::StreamHandler;
 use anyhow::{anyhow, Error};
 use futures::Stream;
 use futures_util::future::BoxFuture;
-use futures_util::FutureExt;
+use futures_util::{FutureExt, SinkExt, StreamExt};
 use std::ops::Deref;
 use std::pin::Pin;
-use tokio::spawn;
+use std::time::Duration;
+use tokio::time::sleep;
+use tokio::{select, spawn};
 
 pub struct ListRoomSimpleInfoHandler;
 
@@ -143,10 +146,48 @@ pub const ALL_ROOM_SIMPLE_INFO_STREAM_TYPE: RequestType<(), Vec<RoomSimpleInfo>>
 impl StreamHandler<(), Vec<RoomSimpleInfo>> for AllRoomSimpleInfoStreamHandler {
     fn handle(
         &self,
-        uid: u32,
-        req: (),
+        _: u32,
+        _: (),
     ) -> BoxFuture<Result<Pin<Box<dyn Stream<Item = Vec<RoomSimpleInfo>> + Send + 'static>>, Error>>
     {
-        todo!()
+        async move {
+            let mut info_recv = room_manager()
+                .all_rooms_simple_info_change_watch
+                .clone_recv();
+            let (mut send, recv) = futures_channel::mpsc::unbounded::<Vec<RoomSimpleInfo>>();
+            spawn(async move {
+                loop {
+                    select! {
+                        Ok(_) = info_recv.changed() => {
+                            let cloned_opt = {
+                                let r = info_recv.borrow_and_update();
+                                if let Some(ref info) = *r {
+                                    Some(info.clone())
+                                } else {
+                                    None
+                                }
+                            };
+                            if let Some(cloned) = cloned_opt {
+                                let send_r = send.send(cloned).await;
+                                if let Err(_e) = send_r {
+                                    break;
+                                }
+                            }
+                        }
+                        _ = sleep(Duration::from_millis(system_settings().passive_notify_all_rooms_info_interval)) => {
+                            let vec = room_manager().all_rooms_simple_info();
+                            let send_r = send.send(vec).await;
+                            if let Err(_e) = send_r {
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+            let pinned: Pin<Box<dyn Stream<Item=Vec<RoomSimpleInfo>> + Send + 'static>> =
+                Box::pin(recv);
+            Ok(pinned)
+        }
+            .boxed()
     }
 }

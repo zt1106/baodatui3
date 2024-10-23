@@ -4,7 +4,8 @@ use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::watch::Receiver;
 use tokio::time::sleep;
 
-enum DebouncePolicy {
+pub enum DebouncePolicy {
+    /// when an item is available, wait some time for more items, and only keep the last one
     OnlySendLast(u64),
     // TODO add more
     // None
@@ -32,21 +33,17 @@ pub struct WatcherWrapper<T> {
     policy: DebouncePolicy,
 }
 
-impl<T: Send + Sync + 'static> Default for WatcherWrapper<T> {
-    fn default() -> Self {
+impl<T: Send + Sync + 'static> WatcherWrapper<T> {
+    pub fn new(policy: DebouncePolicy) -> Self {
         let (send, recv) = tokio::sync::watch::channel::<Option<T>>(None);
         let (buffered_send, mut buffered_recv) = tokio::sync::mpsc::unbounded_channel::<T>();
-        let policy = DebouncePolicy::default();
         match policy {
             DebouncePolicy::OnlySendLast(timeout) => {
                 spawn(async move {
                     loop {
                         let next = buffered_recv.recv().await;
                         if next.is_none() {
-                            dbg!("next is none");
                             break;
-                        } else {
-                            dbg!("next is some");
                         }
                         let mut next = next.unwrap();
                         sleep(Duration::from_millis(timeout)).await;
@@ -58,10 +55,7 @@ impl<T: Send + Sync + 'static> Default for WatcherWrapper<T> {
                             }
                         }
                         if let Err(_) = send.send(Some(next)) {
-                            dbg!("watch send is error");
                             break;
-                        } else {
-                            dbg!("watch send is success");
                         }
                     }
                 });
@@ -72,6 +66,12 @@ impl<T: Send + Sync + 'static> Default for WatcherWrapper<T> {
             buffered_send,
             policy,
         }
+    }
+}
+
+impl<T: Send + Sync + 'static> Default for WatcherWrapper<T> {
+    fn default() -> Self {
+        Self::new(DebouncePolicy::default())
     }
 }
 

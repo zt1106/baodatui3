@@ -10,9 +10,11 @@ pub mod transport;
 pub mod utils;
 
 use crate::global::handlers::room_handlers::{
-    ChangeGameConfigHandler, CreateRoomHandler, EnterRoomHandler, LeaveRoomHandler,
-    ListRoomSimpleInfoHandler, CHANGE_GAME_CONFIG_REQ_TYPE, CREATE_ROOM_REQ_TYPE,
+    AllRoomSimpleInfoStreamHandler, ChangeGameConfigHandler, CreateRoomHandler, EnterRoomHandler,
+    LeaveRoomHandler, ListRoomSimpleInfoHandler, RoomDetailedInfoStreamHandler,
+    ALL_ROOM_SIMPLE_INFO_STREAM_TYPE, CHANGE_GAME_CONFIG_REQ_TYPE, CREATE_ROOM_REQ_TYPE,
     ENTER_ROOM_REQ_TYPE, LEAVE_ROOM_REQ_TYPE, LIST_ROOM_SIMPLE_INFO_REQ_TYPE,
+    ROOM_DETAILED_INFO_STREAM_TYPE,
 };
 use crate::global::handlers::user_handlers::{
     ChangeCurUserNameHandler, GetCurUserHandler, CHANGE_CUR_USER_NAME_REQ_TYPE,
@@ -93,15 +95,6 @@ pub async fn main_inner(
     }
 }
 
-/// only makes sense when testing
-// fn reset_all_global_maps() {
-//     room_manager().reset();
-//     rsocket_manager().reset();
-//     user_manager().reset();
-//     system_settings_arc().write().non_active_room_time =
-//         SystemSettings::default().non_active_room_time;
-// }
-
 fn init_global_handlers() {
     // users
     rsocket_manager().add_request_handler(GET_CUR_USER_REQ_TYPE, GetCurUserHandler);
@@ -114,6 +107,14 @@ fn init_global_handlers() {
     rsocket_manager().add_request_handler(LEAVE_ROOM_REQ_TYPE, LeaveRoomHandler);
     rsocket_manager().add_request_handler(ENTER_ROOM_REQ_TYPE, EnterRoomHandler);
     rsocket_manager().add_request_handler(CHANGE_GAME_CONFIG_REQ_TYPE, ChangeGameConfigHandler);
+    rsocket_manager().add_stream_handler(
+        ALL_ROOM_SIMPLE_INFO_STREAM_TYPE,
+        AllRoomSimpleInfoStreamHandler,
+    );
+    rsocket_manager().add_stream_handler(
+        ROOM_DETAILED_INFO_STREAM_TYPE,
+        RoomDetailedInfoStreamHandler,
+    );
 
     // games
 }

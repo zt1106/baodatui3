@@ -1,3 +1,4 @@
+use crate::global::handlers::user_handlers::GET_CUR_USER_REQ_TYPE;
 use crate::main_inner;
 use crate::transport::request::RequestType;
 use anyhow::Error;
@@ -11,7 +12,7 @@ use serde_json::{json, Value};
 use std::future;
 use std::net::TcpListener;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::oneshot::Sender;
@@ -73,6 +74,18 @@ impl Client {
         let mut c = Self::new();
         c.connect().await;
         c
+    }
+
+    pub async fn user_id(&self) -> u32 {
+        static USER_ID: OnceLock<u32> = OnceLock::new();
+        match USER_ID.get() {
+            None => {
+                let user = self.request_no_args(GET_CUR_USER_REQ_TYPE).await.unwrap();
+                USER_ID.set(user.id).unwrap();
+                user.id
+            }
+            Some(i) => *i,
+        }
     }
 
     pub async fn new_and_connect_with_server(server: Arc<Mutex<Server>>) -> Self {

@@ -3,7 +3,7 @@ use crate::global::settings::system_settings;
 use crate::global::user_manager::user_manager;
 use crate::model::configs::GameConfigurations;
 use crate::model::room::{Room, RoomSimpleInfo};
-use crate::utils::WatcherWrapper;
+use crate::utils::{DebouncePolicy, WatcherWrapper};
 use anyhow::{anyhow, Error};
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -17,10 +17,20 @@ pub fn room_manager() -> &'static RoomManager {
     ROOM_MANAGER.get_or_init(|| RoomManager::default())
 }
 
-#[derive(Default)]
 pub struct RoomManager {
     user_id_map: Arc<RwLock<HashMap<u32, Arc<RwLock<Room>>>>>,
-    all_rooms_simple_info_change_watch: WatcherWrapper<Vec<RoomSimpleInfo>>,
+    pub all_rooms_simple_info_change_watch: WatcherWrapper<Vec<RoomSimpleInfo>>,
+}
+
+impl Default for RoomManager {
+    fn default() -> Self {
+        Self {
+            user_id_map: Default::default(),
+            all_rooms_simple_info_change_watch: WatcherWrapper::new(DebouncePolicy::OnlySendLast(
+                1000,
+            )),
+        }
+    }
 }
 
 impl RoomManager {
@@ -90,6 +100,7 @@ impl RoomManager {
         self.user_id_map.write().insert(user_id, room.clone());
         self.all_rooms_simple_info_change_watch
             .send(self.all_rooms_simple_info());
+        room.write().notify_detail_changed();
         Ok(())
     }
 
@@ -109,6 +120,7 @@ impl RoomManager {
         }
         self.all_rooms_simple_info_change_watch
             .send(self.all_rooms_simple_info());
+        room.write().notify_detail_changed();
         Ok(())
     }
 
@@ -129,7 +141,7 @@ impl RoomManager {
         Self::id_map().all()
     }
 
-    fn all_rooms_simple_info(&self) -> Vec<RoomSimpleInfo> {
+    pub fn all_rooms_simple_info(&self) -> Vec<RoomSimpleInfo> {
         self.all().iter().map(|r| r.read().deref().into()).collect()
     }
 
@@ -149,10 +161,5 @@ impl RoomManager {
                 .send(self.all_rooms_simple_info());
         }
         Ok(())
-    }
-
-    pub fn reset(&self) {
-        self.user_id_map.write().clear();
-        Self::id_map().reset();
     }
 }
