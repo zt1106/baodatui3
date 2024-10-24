@@ -197,3 +197,12 @@ async fn room_detailed_info_stream_by_new_user_enter_test() {
     let detail = detail_stream.next().await.unwrap();
     assert_eq!(detail.user_in_room_infos.len(), 2);
 }
+
+#[tokio::test]
+async fn room_detailed_info_stream_by_user_prepare_test() {}
+
+#[tokio::test]
+async fn room_detailed_info_stream_by_user_leave_test() {}
+
+#[tokio::test]
+async fn room_detailed_info_stream_when_room_removed_test() {}

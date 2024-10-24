@@ -1,3 +1,4 @@
+use std::ops::{Deref, DerefMut};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::spawn;
 use tokio::sync::mpsc::UnboundedSender;
@@ -84,3 +85,68 @@ impl<T> WatcherWrapper<T> {
         self.recv.clone()
     }
 }
+
+pub struct RefWrapper<'a, T, S>
+where
+    S: From<&'a mut T>,
+{
+    inner: &'a mut T,
+    _marker: std::marker::PhantomData<S>,
+}
+
+impl<'a, T, S> RefWrapper<'a, T, S>
+where
+    S: From<&'a mut T>,
+{
+    pub fn new(inner: &'a mut T) -> Self {
+        Self {
+            inner,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    pub fn as_s(&'a mut self) -> S {
+        let a = self.inner.deref_mut();
+        S::from(a)
+    }
+}
+
+impl<'a, T, S> Deref for RefWrapper<'a, T, S>
+where
+    S: From<&'a mut T>,
+{
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner
+    }
+}
+
+impl<'a, T, S> DerefMut for RefWrapper<'a, T, S>
+where
+    S: From<&'a mut T>,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.inner
+    }
+}
+
+impl<'a, T, S> Drop for RefWrapper<'a, T, S>
+where
+    S: From<&'a mut T>,
+{
+    fn drop(&mut self) {
+        let s = self.as_s();
+    }
+}
+
+// pub fn test(s: &mut String) -> impl DerefMut<Target=String> + '_ {
+//     let wrapped = RefWrapper::new(s);
+//     wrapped
+// }
+//
+// fn call_test() {
+//     let mut s: String = String::new();
+//     let mut w = test(&mut s);
+//     w.push_str("world");
+// }
